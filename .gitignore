@@ -62,6 +62,10 @@ sysinfo.txt
 *.app
 
 Assets/TextMesh*
+Assets/Editor Default Resources/
+Assets/ExternalDependencyManager/
+Assets/Firebase
+Assets/Plugins
 
 # Crashlytics generated file
 crashlytics-build.properties

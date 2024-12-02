@@ -68,6 +68,8 @@ Assets/Firebase
 Assets/Plugins
 Assets/GeneratedLocalRepo/
 Assets/google-services*
+Assets/StreamingAssets/Google-services*
+
 ProjectSettings/AdnroidResolverDependencies.xml
 Keystore/
 

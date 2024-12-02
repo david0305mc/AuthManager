@@ -66,6 +66,9 @@ Assets/Editor Default Resources/
 Assets/ExternalDependencyManager/
 Assets/Firebase
 Assets/Plugins
+Assets/GeneratedLocalRepo/
+ProjectSettings/AdnroidResolverDependencies.xml
+Keystore/
 
 # Crashlytics generated file
 crashlytics-build.properties

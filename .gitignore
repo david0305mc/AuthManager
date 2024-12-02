@@ -69,6 +69,7 @@ Assets/Plugins
 Assets/GeneratedLocalRepo/
 Assets/google-services*
 Assets/StreamingAssets/Google-services*
+Assets/GooglePlayGames/
 
 ProjectSettings/AdnroidResolverDependencies.xml
 Keystore/

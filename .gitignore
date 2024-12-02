@@ -67,6 +67,7 @@ Assets/ExternalDependencyManager/
 Assets/Firebase
 Assets/Plugins
 Assets/GeneratedLocalRepo/
+Assets/google-services*
 ProjectSettings/AdnroidResolverDependencies.xml
 Keystore/
 

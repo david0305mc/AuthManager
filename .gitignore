@@ -65,7 +65,9 @@ Assets/TextMesh*
 Assets/Editor Default Resources/
 Assets/ExternalDependencyManager/
 Assets/Firebase
-Assets/Plugins
+Assets/Plugins/Android
+Assets/Plugins/iOS
+Assets/Plugins/tvOS
 Assets/GeneratedLocalRepo/
 Assets/google-services*
 Assets/StreamingAssets/Google-services*

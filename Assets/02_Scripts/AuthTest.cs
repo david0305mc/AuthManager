@@ -18,12 +18,13 @@ public class AuthTest : MonoBehaviour
     }
     private void Start()
     {
-        AuthManager.Instance.Initialize();
+        GPGSTest.Instance.InitializeFirebase();
+        GPGSTest.Instance.InitializeGPGS();
     }
     public void OnClickLogin()
     {
         CancellationTokenSource cts = new CancellationTokenSource();
-        AuthManager.Instance.SignInWithPlatform(EPlatform.Google, cts);
+        GPGSTest.Instance.SignInWithPlatform(EPlatform.Google, cts);
     }
 
     public void OnClickAdd()
@@ -33,11 +34,16 @@ public class AuthTest : MonoBehaviour
 
     public void OnClickLoad()
     {
-        AuthManager.Instance.LoadGame();
+        GPGSTest.Instance.LoadGame();
     }
 
     public void OnClickSave()
     {
-        AuthManager.Instance.SaveGame();
+        GPGSTest.Instance.SaveGame();
+    }
+
+    public void OnClickSignOut()
+    {
+        GPGSTest.Instance.SignOut();
     }
 }

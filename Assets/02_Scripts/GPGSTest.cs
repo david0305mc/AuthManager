@@ -114,23 +114,31 @@ public class GPGSTest : Singleton<GPGSTest>
 
                 if (status == SavedGameRequestStatus.Success)
                 {
-                    Debug.Log("!! GoodLee");
+                    Debug.Log("!! Load Success");
 
                         // 데이터 로드
-                        saveGameClient.ReadBinaryData(data, (status, loadedData) =>
+                    saveGameClient.ReadBinaryData(data, (status, loadedData) =>
                     {
-                        string data = System.Text.Encoding.UTF8.GetString(loadedData);
-
-                        if (data == "")
+                        if (status == SavedGameRequestStatus.Success)
                         {
+                            string utfString = System.Text.Encoding.UTF8.GetString(loadedData);
+                            Debug.Log($"Read Success data {utfString}");
+                            if (utfString == "")
+                            {
                                 // 데이터가 없을 경우 초기화 후 저장
                                 UserDataManager.Instance.baseData = new BaseData();
+                            }
+                            else
+                            {
+                                var baseData = JsonUtility.FromJson<BaseData>(utfString);
+                                UserDataManager.Instance.baseData.gold.Value = baseData.gold.Value;
+                                // 불러온 데이터를 따로 처리해주는 부분 필요!    
+                            }
                         }
                         else
                         {
-                            UserDataManager.Instance.baseData = JsonUtility.FromJson<BaseData>(data);
-                                // 불러온 데이터를 따로 처리해주는 부분 필요!
-                            }
+                            Debug.Log($"Read Failed Status {status} {status.ToString()}");
+                        }
                         ucs.TrySetResult();
                     });
                 }
@@ -156,25 +164,26 @@ public class GPGSTest : Singleton<GPGSTest>
             {
                 if (status == SavedGameRequestStatus.Success)
                 {
+                    Debug.Log("Save Success");
                     var update = new SavedGameMetadataUpdate.Builder().Build();
 
                         //json
-                        var json = JsonUtility.ToJson(UserDataManager.Instance.baseData);
+                    var json = JsonUtility.ToJson(UserDataManager.Instance.baseData);
                     byte[] data = Encoding.UTF8.GetBytes(json);
-
-                        // 저장 함수 실행
-                        saveGameClient.CommitUpdate(gameData, update, data, (status2, gameData2) =>
+                   
+                        // 저장 함수 실행    
+                    saveGameClient.CommitUpdate(gameData, update, data, (status2, gameData2) =>
                     {
                         if (status2 == SavedGameRequestStatus.Success)
-                        {
-                                // 저장완료부분
-                                Debug.Log("Save End");
+                        {    
+                            // 저장완료부분    
+                            Debug.Log($"Save Data Success {json}");
                             ucs.TrySetResult(true);
                         }
                         else
                         {
                             ucs.TrySetResult(false);
-                            Debug.Log("Save nonononononono...");
+                            Debug.Log($"Save Data Failed {json}");
                         }
                     });
                 }

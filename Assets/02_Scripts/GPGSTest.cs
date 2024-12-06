@@ -131,7 +131,7 @@ public class GPGSTest : Singleton<GPGSTest>
                                 var serverData = JsonUtility.FromJson<BaseData>(utfString);
                                 if (!isLogin)
                                 {
-                                    if (Session == serverData.session)
+                                    if (Session != serverData.session)
                                     {
                                     
                                         #if UNITY_EDITOR       

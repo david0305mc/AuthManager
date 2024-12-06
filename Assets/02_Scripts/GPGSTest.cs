@@ -3,8 +3,6 @@ using Firebase.Auth;
 using GooglePlayGames;
 using GooglePlayGames.BasicApi;
 using GooglePlayGames.BasicApi.SavedGame;
-using System.Collections;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using UnityEngine;
@@ -12,7 +10,10 @@ using UnityEngine;
 public class GPGSTest : Singleton<GPGSTest>
 {
     public FirebaseAuth Auth { get; set; }
+    
+    public string Session { get; set; }
 
+    private ISavedGameMetadata savedGameMetaData;
     public void InitializeFirebase()
     {
         Debug.Log("[Firebase] Setting up Firebase Auth");
@@ -88,6 +89,7 @@ public class GPGSTest : Singleton<GPGSTest>
         string token = await Auth.CurrentUser.TokenAsync(true).AsUniTask().AttachExternalCancellation(_cts.Token);
         Debug.Log($"token {token}");
     }
+  
 
     public void SignOut()
     {
@@ -95,7 +97,7 @@ public class GPGSTest : Singleton<GPGSTest>
             PlayGamesPlatform.Instance.SignOut();
         Auth.SignOut();
     }
-    public async UniTask LoadGame()
+    public async UniTask LoadGame(bool isLogin = false)
     {
         Debug.Log("LoadGame0");
         UniTaskCompletionSource ucs = new UniTaskCompletionSource();
@@ -111,27 +113,45 @@ public class GPGSTest : Singleton<GPGSTest>
             ConflictResolutionStrategy.UseLastKnownGood,
             (status, data) =>
             {
-
+                savedGameMetaData = data;
                 if (status == SavedGameRequestStatus.Success)
                 {
                     Debug.Log("!! Load Success");
 
                         // 데이터 로드
-                    saveGameClient.ReadBinaryData(data, (status, loadedData) =>
+                    saveGameClient.ReadBinaryData(savedGameMetaData, (status, loadedData) =>
                     {
                         if (status == SavedGameRequestStatus.Success)
                         {
+                            
                             string utfString = System.Text.Encoding.UTF8.GetString(loadedData);
                             Debug.Log($"Read Success data {utfString}");
-                            if (utfString == "")
+                            if (utfString != string.Empty)
                             {
-                                // 데이터가 없을 경우 초기화 후 저장
-                                UserDataManager.Instance.baseData = new BaseData();
-                            }
-                            else
-                            {
-                                var baseData = JsonUtility.FromJson<BaseData>(utfString);
-                                UserDataManager.Instance.baseData.gold.Value = baseData.gold.Value;
+                                var serverData = JsonUtility.FromJson<BaseData>(utfString);
+                                if (!isLogin)
+                                {
+                                    if (Session == serverData.session)
+                                    {
+                                    
+                                        #if UNITY_EDITOR       
+                                        UnityEditor.EditorApplication.isPlaying = false;
+                                        #else
+                                            // 실제 빌드된 앱에서 앱 종료
+                                            Application.Quit();
+                                        #endif
+                                        return;
+                                    }
+                                }
+
+                                // 로컬과 버전 비교
+
+                                if (UserDataManager.Instance.baseData.dbVersion < serverData.dbVersion)
+                                {
+                                    UserDataManager.Instance.baseData = Utill.CopyAll(serverData);
+                                }
+                                AuthTest.Instance.UpdateUI();
+                                //UserDataManager.Instance.baseData.gold.Value = baseData.gold.Value;
                                 // 불러온 데이터를 따로 처리해주는 부분 필요!    
                             }
                         }
@@ -156,42 +176,73 @@ public class GPGSTest : Singleton<GPGSTest>
         ISavedGameClient saveGameClient = PlayGamesPlatform.Instance.SavedGame;
 
         string fileName = "testFile";
-        // 데이터 접근
-        saveGameClient.OpenWithAutomaticConflictResolution(fileName,
-            DataSource.ReadCacheOrNetwork,
-            ConflictResolutionStrategy.UseLastKnownGood,
-            (status, gameData) =>
-            {
-                if (status == SavedGameRequestStatus.Success)
-                {
-                    Debug.Log("Save Success");
-                    var update = new SavedGameMetadataUpdate.Builder().Build();
+        UserDataManager.Instance.baseData.dbVersion = GameTime.Get();
+        if (savedGameMetaData.IsOpen)
+        {
+            Debug.Log("Save Success");
+            var update = new SavedGameMetadataUpdate.Builder().Build();
 
-                        //json
-                    var json = JsonUtility.ToJson(UserDataManager.Instance.baseData);
-                    byte[] data = Encoding.UTF8.GetBytes(json);
-                   
-                        // 저장 함수 실행    
-                    saveGameClient.CommitUpdate(gameData, update, data, (status2, gameData2) =>
-                    {
-                        if (status2 == SavedGameRequestStatus.Success)
-                        {    
-                            // 저장완료부분    
-                            Debug.Log($"Save Data Success {json}");
-                            ucs.TrySetResult(true);
-                        }
-                        else
-                        {
-                            ucs.TrySetResult(false);
-                            Debug.Log($"Save Data Failed {json}");
-                        }
-                    });
+            //json
+            var json = JsonUtility.ToJson(UserDataManager.Instance.baseData);
+            byte[] data = Encoding.UTF8.GetBytes(json);
+
+            // 저장 함수 실행    
+            saveGameClient.CommitUpdate(savedGameMetaData, update, data, (status2, gameData2) =>
+            {
+                if (status2 == SavedGameRequestStatus.Success)
+                {
+                    // 저장완료부분    
+                    Debug.Log($"Save Data Success {json}");
+                    ucs.TrySetResult(true);
                 }
                 else
                 {
-                    Debug.Log("Save No.....");
+                    ucs.TrySetResult(false);
+                    Debug.Log($"Save Data Failed {json}");
                 }
             });
+        }
+        else
+        {
+            // 데이터 접근
+            saveGameClient.OpenWithAutomaticConflictResolution(fileName,
+                DataSource.ReadCacheOrNetwork,
+                ConflictResolutionStrategy.UseLastKnownGood,
+                (status, gameData) =>
+                {
+                    savedGameMetaData = gameData;
+                    if (status == SavedGameRequestStatus.Success)
+                    {
+                        Debug.Log("Save Success");
+                        var update = new SavedGameMetadataUpdate.Builder().Build();
+
+                    //json
+                    var json = JsonUtility.ToJson(UserDataManager.Instance.baseData);
+                        byte[] data = Encoding.UTF8.GetBytes(json);
+
+                    // 저장 함수 실행    
+                    saveGameClient.CommitUpdate(savedGameMetaData, update, data, (status2, gameData2) =>
+                        {
+                            if (status2 == SavedGameRequestStatus.Success)
+                            {
+                            // 저장완료부분    
+                            Debug.Log($"Save Data Success {json}");
+                                ucs.TrySetResult(true);
+                            }
+                            else
+                            {
+                                ucs.TrySetResult(false);
+                                Debug.Log($"Save Data Failed {json}");
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Debug.Log("Save No.....");
+                    }
+                });
+        }
+       
         return await ucs.Task;
 
     }

@@ -10,21 +10,15 @@ public class UserDataManager : Singleton<UserDataManager>
     private static readonly string LocalVersionPath = Path.Combine(Application.persistentDataPath, "VersionData");
     public BaseData baseData { get; set; } 
     public InventoryData inventoryData { get; set; } = new InventoryData();
-    public DBVersion dbVersion { get; set; }
-
+   
 
     public void SaveLocalData()
     {
         {
+            baseData.dbVersion = GameTime.Get();
             var saveData = JsonUtility.ToJson(baseData);
             //saveData = Utill.EncryptXOR(saveData);
             Utill.SaveFile(LocalFilePath, saveData);
-        }
-
-        {
-            var saveData = JsonUtility.ToJson(dbVersion);
-            //saveData = Utill.EncryptXOR(saveData);
-            Utill.SaveFile(LocalVersionPath, saveData);
         }
     }
     public void LoadLocalData(ulong _uno)
@@ -44,17 +38,6 @@ public class UserDataManager : Singleton<UserDataManager>
         {
             CreateNewUser(_uno);
         }
-
-        if (File.Exists(LocalVersionPath))
-        {
-            var localData = Utill.LoadFromFile(LocalVersionPath);
-            dbVersion = JsonUtility.FromJson<DBVersion>(localData);
-        }
-        else
-        {
-            dbVersion = new DBVersion();
-            dbVersion.dbVersion = 0;
-        }
     }
 
     public void CreateNewUser(ulong _uno)
@@ -65,9 +48,7 @@ public class UserDataManager : Singleton<UserDataManager>
         //LoadDefaultData();
         baseData.level = 1;
         baseData.UNO = _uno;
-
-        dbVersion = new DBVersion();
-        dbVersion.dbVersion = 0;
+        baseData.dbVersion = 0;
 
         SaveLocalData();
     }
@@ -92,12 +73,10 @@ public class SData
     }
 }
 
-public class DBVersion : SData
-{
-    public long dbVersion;
-}
 public class BaseData : SData
 {
+    public string session;
+    public long dbVersion;
     public ulong UNO;
     public IntReactiveProperty gold = new IntReactiveProperty();
     public int level;

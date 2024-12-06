@@ -3,9 +3,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using System.Security.Cryptography;
 
 public partial class Utill
 {
@@ -101,7 +103,60 @@ public partial class Utill
     {
         return Resources.Load<T>(path);
     }
+    public static T CopyAll<T>(T source) where T : new()
+    {
+        if (source == null)
+            throw new ArgumentNullException(nameof(source));
 
+        T target = new T();
+        Type type = typeof(T);
+
+        // 필드 복사
+        FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        foreach (FieldInfo field in fields)
+        {
+            object value = field.GetValue(source);
+            field.SetValue(target, value);
+        }
+
+        // 속성 복사
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (PropertyInfo property in properties)
+        {
+            if (property.CanWrite)
+            {
+                object value = property.GetValue(source);
+                property.SetValue(target, value);
+            }
+        }
+
+        return target;
+    }
+    public static string ComputeMD5Hash(string input)
+    {
+        using (MD5 md5 = MD5.Create())
+        {
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+            // 바이트 배열을 16진수 문자열로 변환
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in hashBytes)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+            return sb.ToString();
+        }
+    }
+
+    public static string GenerateAesSessionKey()
+    {
+        using (var aes = Aes.Create())
+        {
+            aes.GenerateKey();
+            return Convert.ToBase64String(aes.Key);
+        }
+    }
 }
 
 public static class RaycastUtilities

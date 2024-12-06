@@ -3,18 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Threading;
 using TMPro;
-using UniRx;
-public class AuthTest : MonoBehaviour
+using Cysharp.Threading.Tasks;
+
+public class AuthTest : SingletonMono<AuthTest>
 {
 
     [SerializeField] private TextMeshProUGUI goldText;
-    private void Awake()
+
+    protected override void OnSingletonAwake()
     {
+        base.OnSingletonAwake();
         UserDataManager.Instance.baseData = new BaseData();
-        UserDataManager.Instance.baseData.gold.Subscribe(_value =>
-        {
-            goldText.SetText(_value.ToString());
-        });
+        GPGSTest.Instance.Session = Utill.GenerateAesSessionKey();
+    }
+
+    public void UpdateUI()
+    {
+        goldText.SetText(UserDataManager.Instance.baseData.gold.ToString());
     }
     private void Start()
     {
@@ -24,12 +29,32 @@ public class AuthTest : MonoBehaviour
     public void OnClickLogin()
     {
         CancellationTokenSource cts = new CancellationTokenSource();
-        GPGSTest.Instance.SignInWithPlatform(EPlatform.Google, cts);
+
+        UniTask.Create(async () =>
+        {
+            await GameTime.InitGameTime();
+            LoadLocalData();
+            await GPGSTest.Instance.SignInWithPlatform(EPlatform.Google, cts);
+            await GPGSTest.Instance.LoadGame(true);
+            UserDataManager.Instance.baseData.session = GPGSTest.Instance.Session;
+            await GPGSTest.Instance.SaveGame();
+        });
     }
 
     public void OnClickAdd()
     {
-        UserDataManager.Instance.baseData.gold.Value++;
+        //string data = "Hello, World!";
+        //string session = Utill.GenerateAesSessionKey();
+        //Debug.Log($"Original Data: {data} {session}");
+        //return;
+
+        BaseData baseData = new BaseData();
+        baseData.gold.Value = UserDataManager.Instance.baseData.gold.Value + 1;
+        UserDataManager.Instance.baseData = Utill.CopyAll(baseData);
+        Debug.Log($"UserDataManager.Instance.baseData {UserDataManager.Instance.baseData.gold}");
+        UpdateUI();
+        SaveLocalData();
+        //UserDataManager.Instance.baseData.gold.Value++;
     }
 
     public void OnClickLoad()
@@ -39,11 +64,26 @@ public class AuthTest : MonoBehaviour
 
     public void OnClickSave()
     {
-        GPGSTest.Instance.SaveGame();
+        UniTask.Create(async () =>
+        {
+            await GPGSTest.Instance.LoadGame();
+            GPGSTest.Instance.SaveGame();
+        });
     }
 
     public void OnClickSignOut()
     {
         GPGSTest.Instance.SignOut();
+    }
+
+    private void SaveLocalData()
+    {
+        UserDataManager.Instance.SaveLocalData();
+    }
+
+    private void LoadLocalData()
+    {
+        UserDataManager.Instance.LoadLocalData(0);
+        UpdateUI();
     }
 }

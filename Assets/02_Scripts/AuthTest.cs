@@ -14,7 +14,7 @@ public class AuthTest : SingletonMono<AuthTest>
     {
         base.OnSingletonAwake();
         UserDataManager.Instance.baseData = new BaseData();
-        GPGSTest.Instance.Session = Utill.GenerateAesSessionKey();
+        GpgsManager.Instance.Session = Utill.GenerateAesSessionKey();
     }
 
     public void UpdateUI()
@@ -23,8 +23,7 @@ public class AuthTest : SingletonMono<AuthTest>
     }
     private void Start()
     {
-        GPGSTest.Instance.InitializeFirebase();
-        GPGSTest.Instance.InitializeGPGS();
+        GpgsManager.Instance.InitializeGPGS();
     }
     public void OnClickLogin()
     {
@@ -34,10 +33,17 @@ public class AuthTest : SingletonMono<AuthTest>
         {
             await GameTime.InitGameTime();
             LoadLocalData();
-            await GPGSTest.Instance.SignInWithPlatform(EPlatform.Google, cts);
-            await GPGSTest.Instance.LoadGame(true);
-            UserDataManager.Instance.baseData.session = GPGSTest.Instance.Session;
-            await GPGSTest.Instance.SaveGame();
+            bool success = await GpgsManager.Instance.SignIn();
+            if (success)
+            {
+                await GpgsManager.Instance.LoadGame(true);
+                UserDataManager.Instance.baseData.session = GpgsManager.Instance.Session;
+                await GpgsManager.Instance.SaveGame();
+            }
+            else
+            {
+                Debug.LogError("GPGS Login Failed");
+            }
         });
     }
 
@@ -59,7 +65,7 @@ public class AuthTest : SingletonMono<AuthTest>
 
     public void OnClickLoad()
     {
-        GPGSTest.Instance.LoadGame();
+        GpgsManager.Instance.LoadGame();
     }
 
     public void OnClickSave()
@@ -67,13 +73,13 @@ public class AuthTest : SingletonMono<AuthTest>
         UniTask.Create(async () =>
         {
             await GPGSTest.Instance.LoadGame();
-            GPGSTest.Instance.SaveGame();
+            GpgsManager.Instance.SaveGame();
         });
     }
 
     public void OnClickSignOut()
     {
-        GPGSTest.Instance.SignOut();
+        GpgsManager.Instance.SignOut();
     }
 
     private void SaveLocalData()

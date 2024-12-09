@@ -11,7 +11,7 @@ public class GpgsManager : Singleton<GpgsManager>
 {
     public string Session { get; set; }
 
-    private ISavedGameMetadata savedGameMetaData;
+    private ISavedGameMetadata gameMetaData;
 
     public void InitializeGPGS()
     {
@@ -43,6 +43,49 @@ public class GpgsManager : Singleton<GpgsManager>
         if (PlayGamesPlatform.Instance.IsAuthenticated())
             PlayGamesPlatform.Instance.SignOut();
     }
+
+    public async UniTask<(SavedGameRequestStatus, string)> LoadData(string _fileName)
+    {
+        UniTaskCompletionSource<(SavedGameRequestStatus, string)> ucs = new UniTaskCompletionSource<(SavedGameRequestStatus, string)>();
+        ISavedGameClient saveGameClient = PlayGamesPlatform.Instance.SavedGame;
+        Debug.Log($"Load _fileName {_fileName}");
+        saveGameClient.OpenWithAutomaticConflictResolution(_fileName,
+            DataSource.ReadNetworkOnly,
+            ConflictResolutionStrategy.UseLastKnownGood,
+            (status, data) =>
+            {
+                if (status == SavedGameRequestStatus.Success)
+                {
+                    Debug.Log("!! Load Success");
+                    // 데이터 로드
+                    saveGameClient.ReadBinaryData(data, (readStatus, loadedData) =>
+                    {
+                        if (readStatus == SavedGameRequestStatus.Success)
+                        {
+                            string utfString = System.Text.Encoding.UTF8.GetString(loadedData);
+                            Debug.Log($"Read Success data {utfString}");
+                            ucs.TrySetResult((readStatus, utfString));
+                        }
+                        else
+                        {
+                            ucs.TrySetResult((readStatus, string.Empty));
+                            Debug.Log($"Read Failed Status {readStatus}");
+                        }
+                    });
+                }
+                else
+                {
+                    Debug.Log("Load Failed");
+                    ucs.TrySetResult((status, string.Empty));
+                }
+            });
+        return await ucs.Task;
+    }
+    public async UniTask SaveData()
+    { 
+        
+    }
+
     public async UniTask LoadGame(bool isLogin = false)
     {
         Debug.Log("LoadGame0");
@@ -59,13 +102,13 @@ public class GpgsManager : Singleton<GpgsManager>
             ConflictResolutionStrategy.UseLastKnownGood,
             (status, data) =>
             {
-                savedGameMetaData = data;
+                gameMetaData = data;
                 if (status == SavedGameRequestStatus.Success)
                 {
                     Debug.Log("!! Load Success");
 
                     // 데이터 로드
-                    saveGameClient.ReadBinaryData(savedGameMetaData, (status, loadedData) =>
+                    saveGameClient.ReadBinaryData(gameMetaData, (status, loadedData) =>
                     {
                         if (status == SavedGameRequestStatus.Success)
                         {
@@ -123,7 +166,7 @@ public class GpgsManager : Singleton<GpgsManager>
 
         string fileName = "testFile";
         UserDataManager.Instance.baseData.dbVersion = GameTime.Get();
-        if (savedGameMetaData.IsOpen)
+        if (gameMetaData.IsOpen)
         {
             Debug.Log("Save Success");
             var update = new SavedGameMetadataUpdate.Builder().Build();
@@ -133,7 +176,7 @@ public class GpgsManager : Singleton<GpgsManager>
             byte[] data = Encoding.UTF8.GetBytes(json);
 
             // 저장 함수 실행    
-            saveGameClient.CommitUpdate(savedGameMetaData, update, data, (status2, gameData2) =>
+            saveGameClient.CommitUpdate(gameMetaData, update, data, (status2, gameData2) =>
             {
                 if (status2 == SavedGameRequestStatus.Success)
                 {
@@ -156,7 +199,7 @@ public class GpgsManager : Singleton<GpgsManager>
                 ConflictResolutionStrategy.UseLastKnownGood,
                 (status, gameData) =>
                 {
-                    savedGameMetaData = gameData;
+                    gameMetaData = gameData;
                     if (status == SavedGameRequestStatus.Success)
                     {
                         Debug.Log("Save Success");
@@ -167,7 +210,7 @@ public class GpgsManager : Singleton<GpgsManager>
                         byte[] data = Encoding.UTF8.GetBytes(json);
 
                         // 저장 함수 실행    
-                        saveGameClient.CommitUpdate(savedGameMetaData, update, data, (status2, gameData2) =>
+                        saveGameClient.CommitUpdate(gameMetaData, update, data, (status2, gameData2) =>
                         {
                             if (status2 == SavedGameRequestStatus.Success)
                             {

@@ -72,7 +72,7 @@ public class AuthTest : SingletonMono<AuthTest>
     {
         UniTask.Create(async () =>
         {
-            await GPGSTest.Instance.LoadGame();
+            await GpgsManager.Instance.LoadGame();
             GpgsManager.Instance.SaveGame();
         });
     }

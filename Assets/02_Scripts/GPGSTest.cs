@@ -131,11 +131,11 @@ public class GPGSTest : Singleton<GPGSTest>
                                 var serverData = JsonUtility.FromJson<BaseData>(utfString);
                                 if (!isLogin)
                                 {
-                                    if (Session != serverData.session)
-                                    {
-                                        Utill.QuitApp();
-                                        return;
-                                    }
+                                    //if (Session != serverData.session)
+                                    //{
+                                    //    Utill.QuitApp();
+                                    //    return;
+                                    //}
                                 }
 
                                 // 로컬과 버전 비교

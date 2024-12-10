@@ -46,8 +46,8 @@ public class AuthTest : SingletonMono<AuthTest>
                     Debug.LogError("Save Filed");
                     return;
                 }
-                
-                LoadLocalData(PlayGamesPlatform.Instance.GetUserId());
+
+                UserDataManager.Instance.LoadLocalData(PlayGamesPlatform.Instance.GetUserId());
                 var result = await GpgsManager.Instance.LoadData(GpgsManager.UserDataString);
                 if (result.Item1 != GooglePlayGames.BasicApi.SavedGame.SavedGameRequestStatus.Success)
                 {
@@ -58,6 +58,12 @@ public class AuthTest : SingletonMono<AuthTest>
                 if (!string.IsNullOrEmpty(result.Item2))
                 {
                     var serverData = JsonUtility.FromJson<BaseData>(result.Item2);
+                    if (serverData.userUID != UserDataManager.Instance.baseData.userUID)
+                    {
+                        Debug.LogError($"serverData.userUID != UserDataManager.Instance.baseData.userUID {serverData.userUID}");
+                        //serverData.userUID = UserDataManager.Instance.baseData.userUID;
+                    }
+
                     if (UserDataManager.Instance.baseData.dbVersion < serverData.dbVersion)
                     {
                         UserDataManager.Instance.baseData = Utill.CopyAll(serverData);
@@ -93,19 +99,24 @@ public class AuthTest : SingletonMono<AuthTest>
         //Debug.Log($"Original Data: {data} {session}");
         //return;
 
-        BaseData baseData = new BaseData();
-        baseData.gold.Value = UserDataManager.Instance.baseData.gold.Value + 1;
-        UserDataManager.Instance.baseData = Utill.CopyAll(baseData);
-        Debug.Log($"UserDataManager.Instance.baseData {UserDataManager.Instance.baseData.gold}");
+        UserDataManager.Instance.baseData.gold.Value = UserDataManager.Instance.baseData.gold.Value + 1;
         UpdateUI();
         SaveLocalData();
         //UserDataManager.Instance.baseData.gold.Value++;
     }
 
-    public void OnClickLoad()
+    public void OnClickDelete()
     {
-
+        UniTask.Create(async () =>
+        {
+            if (await GpgsManager.Instance.DeleteServerData(GpgsManager.UserDataString))
+            {
+                Utill.QuitApp();
+            }
+        });
+        
     }
+
 
     public void OnClickSave()
     {
@@ -124,6 +135,7 @@ public class AuthTest : SingletonMono<AuthTest>
                 return;
             }
 
+            UserDataManager.Instance.baseData.dbVersion = GameTime.Get();
             await GpgsManager.Instance.SaveData(GpgsManager.UserDataString, JsonUtility.ToJson(UserDataManager.Instance.baseData));
             //await GpgsManager.Instance.LoadGame();
             //GpgsManager.Instance.SaveGame();
@@ -143,8 +155,4 @@ public class AuthTest : SingletonMono<AuthTest>
         UserDataManager.Instance.SaveLocalData();
     }
 
-    private void LoadLocalData(string _uid)
-    {
-        UserDataManager.Instance.LoadLocalData(_uid);
-    }
 }

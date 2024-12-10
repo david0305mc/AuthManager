@@ -12,9 +12,12 @@ public class UserDataManager : Singleton<UserDataManager>
     public InventoryData inventoryData { get; set; } = new InventoryData();
    
 
-    public void SaveLocalData(bool _writeDBVersion = true)
+    public void SaveLocalData(bool _updateVersion = true)
     {
-        baseData.dbVersion = GameTime.Get();
+        if (_updateVersion)
+        {
+            baseData.dbVersion = GameTime.Get();
+        }
         var saveData = JsonUtility.ToJson(baseData);
         //saveData = Utill.EncryptXOR(saveData);
         Utill.SaveFile(LocalFilePath, saveData);
@@ -26,16 +29,19 @@ public class UserDataManager : Singleton<UserDataManager>
             var localData = Utill.LoadFromFile(LocalFilePath);
             //localData = Utill.EncryptXOR(localData);
             baseData = JsonUtility.FromJson<BaseData>(localData);
-            if (baseData.UID != _uid)
+            if (baseData.userUID != _uid)
             {
+                Debug.Log("CreateNewUser 0");
                 CreateNewUser(_uid);
             }
             //LocalData.UpdateRefData();
         }
         else
         {
+            Debug.Log("CreateNewUser 1");
             CreateNewUser(_uid);
         }
+        Debug.Log($"load Local {baseData.userUID}");
     }
 
     public void CreateNewUser(string _uid)
@@ -45,7 +51,7 @@ public class UserDataManager : Singleton<UserDataManager>
         //LocalData.UpdateRefData();
         //LoadDefaultData();
         baseData.level = 1;
-        baseData.UID = _uid;
+        baseData.userUID = _uid;
         baseData.dbVersion = 0;
 
         SaveLocalData(false);
@@ -73,9 +79,8 @@ public class SData
 
 public class BaseData : SData
 {
-    public string session;
     public long dbVersion;
-    public string UID;
+    public string userUID;
     public IntReactiveProperty gold = new IntReactiveProperty();
     public int level;
     

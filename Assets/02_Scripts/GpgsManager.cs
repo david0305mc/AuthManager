@@ -9,6 +9,8 @@ using UnityEngine;
 
 public class GpgsManager : Singleton<GpgsManager>
 {
+    public static readonly string SessionString = "Session";
+    public static readonly string UserDataString = "UserData";
     public string Session { get; set; }
 
     private ISavedGameMetadata gameMetaData;
@@ -27,8 +29,11 @@ public class GpgsManager : Singleton<GpgsManager>
     public async UniTask<bool> SignIn()
     {
         if (PlayGamesPlatform.Instance.IsAuthenticated())
-            PlayGamesPlatform.Instance.SignOut();
-
+        {
+            //PlayGamesPlatform.Instance.SignOut();
+            return true;
+        }
+        
         UniTaskCompletionSource<bool> ucs = new UniTaskCompletionSource<bool>();
         Social.localUser.Authenticate(ret =>
         {
@@ -81,9 +86,45 @@ public class GpgsManager : Singleton<GpgsManager>
             });
         return await ucs.Task;
     }
-    public async UniTask SaveData()
-    { 
-        
+    public async UniTask<bool> SaveData(string _fileName, string _json)
+    {
+        UniTaskCompletionSource<bool> ucs = new UniTaskCompletionSource<bool>();
+        ISavedGameClient saveGameClient = PlayGamesPlatform.Instance.SavedGame;
+        // 데이터 접근
+        saveGameClient.OpenWithAutomaticConflictResolution(_fileName,
+            DataSource.ReadNetworkOnly,
+            ConflictResolutionStrategy.UseLastKnownGood,
+            (status, _gameMetaData) =>
+            {
+                if (status == SavedGameRequestStatus.Success)
+                {
+                    var update = new SavedGameMetadataUpdate.Builder().Build();
+                        //json    
+                    //var json = JsonUtility.ToJson(UserDataManager.Instance.baseData);
+                    byte[] data = Encoding.UTF8.GetBytes(_json);
+                        // 저장 함수 실행        
+                    saveGameClient.CommitUpdate(_gameMetaData, update, data, (status2, gameData2) =>
+                    {
+                        if (status2 == SavedGameRequestStatus.Success)
+                        {    
+                            // 저장완료부분        
+                            Debug.Log($"Save Data Success {_json}");
+                            ucs.TrySetResult(true);
+                        }
+                        else
+                        {
+                            ucs.TrySetResult(false);
+                            Debug.Log($"Save Data Failed {_json}");
+                        }
+                    });
+                }
+                else
+                {
+                    ucs.TrySetResult(false);
+                    Debug.Log("Save No.....");
+                }
+            });
+        return await ucs.Task;
     }
 
     public async UniTask LoadGame(bool isLogin = false)

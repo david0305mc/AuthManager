@@ -14,18 +14,20 @@ public class GameTime
     {
         Init((DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
     }
-    public static async UniTask InitGameTime()
+    public static async UniTask<bool> InitGameTime()
     {
         string dateTimeString = await GetNetworkTime();
 
         if (string.IsNullOrEmpty(dateTimeString))
         {
             InitLocalBase();
+            return false;
         }
         else
         {
             Debug.Log($"date {dateTimeString}");
             Init((DateTime.Parse(dateTimeString) - DateTime.UnixEpoch).TotalSeconds);
+            return true;
         }
     }
     public static async UniTask<string> GetNetworkTime()

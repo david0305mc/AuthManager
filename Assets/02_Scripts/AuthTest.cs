@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Threading;
 using TMPro;
 using Cysharp.Threading.Tasks;
+using GooglePlayGames;
 
 public class AuthTest : SingletonMono<AuthTest>
 {
@@ -31,14 +32,48 @@ public class AuthTest : SingletonMono<AuthTest>
 
         UniTask.Create(async () =>
         {
-            await GameTime.InitGameTime();
-            LoadLocalData();
+            if (!await GameTime.InitGameTime())
+            {
+                Debug.LogError("DisConnect Network");
+                return;
+            }
+            
             bool success = await GpgsManager.Instance.SignIn();
             if (success)
             {
-                await GpgsManager.Instance.LoadGame(true);
-                UserDataManager.Instance.baseData.session = GpgsManager.Instance.Session;
-                await GpgsManager.Instance.SaveGame();
+                //LoadLocalData();
+                if (!await GpgsManager.Instance.SaveData(GpgsManager.SessionString, GpgsManager.Instance.Session))
+                {
+                    Debug.LogError("Save Filed");
+                    return;
+                }
+
+                LoadLocalData();
+                var result = await GpgsManager.Instance.LoadData(GpgsManager.UserDataString);
+                if (result.Item1 != GooglePlayGames.BasicApi.SavedGame.SavedGameRequestStatus.Success)
+                {
+                    Debug.LogError("Load Filed");
+                    return;
+                }
+
+                if (!string.IsNullOrEmpty(result.Item2))
+                {
+                    var serverData = JsonUtility.FromJson<BaseData>(result.Item2);
+                    if (UserDataManager.Instance.baseData.dbVersion < serverData.dbVersion)
+                    {
+                        UserDataManager.Instance.baseData = Utill.CopyAll(serverData);
+                    }
+                }
+                else
+                {
+                    Debug.Log("new User");
+                }
+
+                UpdateUI();
+
+                //await GpgsManager.Instance.LoadGame(true);
+                //UserDataManager.Instance.baseData.session = GpgsManager.Instance.Session;
+                //await GpgsManager.Instance.SaveGame();
             }
             else
             {
@@ -65,15 +100,30 @@ public class AuthTest : SingletonMono<AuthTest>
 
     public void OnClickLoad()
     {
-        GpgsManager.Instance.LoadGame();
+
     }
 
     public void OnClickSave()
     {
         UniTask.Create(async () =>
         {
-            await GpgsManager.Instance.LoadGame();
-            GpgsManager.Instance.SaveGame();
+            var result = await GpgsManager.Instance.LoadData(GpgsManager.SessionString);
+            if (result.Item1 != GooglePlayGames.BasicApi.SavedGame.SavedGameRequestStatus.Success)
+            {
+                return;
+            }
+
+            if (result.Item2 != GpgsManager.Instance.Session)
+            {
+                Debug.LogError("Invalid Session");
+                return;
+            }
+
+            await GpgsManager.Instance.SaveData(GpgsManager.UserDataString, JsonUtility.ToJson(UserDataManager.Instance.baseData));
+            //await GpgsManager.Instance.LoadGame();
+            //GpgsManager.Instance.SaveGame();
+
+            //await GpgsManager.Instance.LoadGame();
         });
     }
 
@@ -90,6 +140,5 @@ public class AuthTest : SingletonMono<AuthTest>
     private void LoadLocalData()
     {
         UserDataManager.Instance.LoadLocalData(0);
-        UpdateUI();
     }
 }

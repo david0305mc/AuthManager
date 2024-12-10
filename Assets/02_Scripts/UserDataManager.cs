@@ -12,45 +12,43 @@ public class UserDataManager : Singleton<UserDataManager>
     public InventoryData inventoryData { get; set; } = new InventoryData();
    
 
-    public void SaveLocalData()
+    public void SaveLocalData(bool _writeDBVersion = true)
     {
-        {
-            baseData.dbVersion = GameTime.Get();
-            var saveData = JsonUtility.ToJson(baseData);
-            //saveData = Utill.EncryptXOR(saveData);
-            Utill.SaveFile(LocalFilePath, saveData);
-        }
+        baseData.dbVersion = GameTime.Get();
+        var saveData = JsonUtility.ToJson(baseData);
+        //saveData = Utill.EncryptXOR(saveData);
+        Utill.SaveFile(LocalFilePath, saveData);
     }
-    public void LoadLocalData(ulong _uno)
+    public void LoadLocalData(string _uid)
     {
         if (File.Exists(LocalFilePath))
         {
             var localData = Utill.LoadFromFile(LocalFilePath);
             //localData = Utill.EncryptXOR(localData);
             baseData = JsonUtility.FromJson<BaseData>(localData);
-            if (baseData.UNO != _uno)
+            if (baseData.UID != _uid)
             {
-                CreateNewUser(_uno);
+                CreateNewUser(_uid);
             }
             //LocalData.UpdateRefData();
         }
         else
         {
-            CreateNewUser(_uno);
+            CreateNewUser(_uid);
         }
     }
 
-    public void CreateNewUser(ulong _uno)
+    public void CreateNewUser(string _uid)
     {
         // NewGame
         baseData = new BaseData();
         //LocalData.UpdateRefData();
         //LoadDefaultData();
         baseData.level = 1;
-        baseData.UNO = _uno;
+        baseData.UID = _uid;
         baseData.dbVersion = 0;
 
-        SaveLocalData();
+        SaveLocalData(false);
     }
 
 }
@@ -77,7 +75,7 @@ public class BaseData : SData
 {
     public string session;
     public long dbVersion;
-    public ulong UNO;
+    public string UID;
     public IntReactiveProperty gold = new IntReactiveProperty();
     public int level;
     

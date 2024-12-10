@@ -41,14 +41,13 @@ public class AuthTest : SingletonMono<AuthTest>
             bool success = await GpgsManager.Instance.SignIn();
             if (success)
             {
-                //LoadLocalData();
                 if (!await GpgsManager.Instance.SaveData(GpgsManager.SessionString, GpgsManager.Instance.Session))
                 {
                     Debug.LogError("Save Filed");
                     return;
                 }
-
-                LoadLocalData();
+                
+                LoadLocalData(PlayGamesPlatform.Instance.GetUserId());
                 var result = await GpgsManager.Instance.LoadData(GpgsManager.UserDataString);
                 if (result.Item1 != GooglePlayGames.BasicApi.SavedGame.SavedGameRequestStatus.Success)
                 {
@@ -62,6 +61,11 @@ public class AuthTest : SingletonMono<AuthTest>
                     if (UserDataManager.Instance.baseData.dbVersion < serverData.dbVersion)
                     {
                         UserDataManager.Instance.baseData = Utill.CopyAll(serverData);
+                        Debug.Log("dbVersion < serverData.dbVersion");
+                    }
+                    else
+                    {
+                        Debug.Log("dbVersion > serverData.dbVersion");
                     }
                 }
                 else
@@ -116,6 +120,7 @@ public class AuthTest : SingletonMono<AuthTest>
             if (result.Item2 != GpgsManager.Instance.Session)
             {
                 Debug.LogError("Invalid Session");
+                Utill.QuitApp();
                 return;
             }
 
@@ -130,6 +135,7 @@ public class AuthTest : SingletonMono<AuthTest>
     public void OnClickSignOut()
     {
         GpgsManager.Instance.SignOut();
+        Utill.QuitApp();
     }
 
     private void SaveLocalData()
@@ -137,8 +143,8 @@ public class AuthTest : SingletonMono<AuthTest>
         UserDataManager.Instance.SaveLocalData();
     }
 
-    private void LoadLocalData()
+    private void LoadLocalData(string _uid)
     {
-        UserDataManager.Instance.LoadLocalData(0);
+        UserDataManager.Instance.LoadLocalData(_uid);
     }
 }

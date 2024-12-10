@@ -133,13 +133,7 @@ public class GPGSTest : Singleton<GPGSTest>
                                 {
                                     if (Session != serverData.session)
                                     {
-                                    
-                                        #if UNITY_EDITOR       
-                                        UnityEditor.EditorApplication.isPlaying = false;
-                                        #else
-                                            // ½ÇÁ¦ ºôµåµÈ ¾Û¿¡¼­ ¾Û Á¾·á
-                                            Application.Quit();
-                                        #endif
+                                        Utill.QuitApp();
                                         return;
                                     }
                                 }

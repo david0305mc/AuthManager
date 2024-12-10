@@ -36,6 +36,15 @@ public partial class Utill
         return go;
     }
 
+    public static void QuitApp()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
     public static string LoadFromFile(string filePath)
     {
         string text = default;

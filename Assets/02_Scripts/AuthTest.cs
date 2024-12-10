@@ -25,6 +25,7 @@ public class AuthTest : SingletonMono<AuthTest>
     private void Start()
     {
         GpgsManager.Instance.InitializeGPGS();
+        AdManager.Instance.InitAD();
     }
     public void OnClickLogin()
     {
@@ -101,7 +102,7 @@ public class AuthTest : SingletonMono<AuthTest>
 
         UserDataManager.Instance.baseData.gold.Value = UserDataManager.Instance.baseData.gold.Value + 1;
         UpdateUI();
-        SaveLocalData();
+        UserDataManager.Instance.SaveLocalData();
         //UserDataManager.Instance.baseData.gold.Value++;
     }
 
@@ -113,10 +114,18 @@ public class AuthTest : SingletonMono<AuthTest>
             {
                 Utill.QuitApp();
             }
-        });
-        
+        });    
     }
 
+    public void ShowAD()
+    {
+        UniTask.Create(async () => {
+            if (await AdManager.Instance.ShowRewardAD())
+            {
+                Debug.Log("RewardAD Completed");
+            }
+        });    
+    }
 
     public void OnClickSave()
     {
@@ -150,9 +159,5 @@ public class AuthTest : SingletonMono<AuthTest>
         Utill.QuitApp();
     }
 
-    private void SaveLocalData()
-    {
-        UserDataManager.Instance.SaveLocalData();
-    }
 
 }

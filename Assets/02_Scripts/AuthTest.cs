@@ -25,8 +25,8 @@ public class AuthTest : SingletonMono<AuthTest>
     private void Start()
     {
         GpgsManager.Instance.InitializeGPGS();
-        AdManager.Instance.InitAD();
-        IapManager.Instance.InitializePurchasing();
+        //AdManager.Instance.InitAD();
+        //IapManager.Instance.InitializePurchasing();
     }
     public void OnClickLogin()
     {
@@ -120,12 +120,12 @@ public class AuthTest : SingletonMono<AuthTest>
 
     public void ShowAD()
     {
-        UniTask.Create(async () => {
-            if (await AdManager.Instance.ShowRewardAD())
-            {
-                Debug.Log("RewardAD Completed");
-            }
-        });    
+        //UniTask.Create(async () => {
+        //    if (await AdManager.Instance.ShowRewardAD())
+        //    {
+        //        Debug.Log("RewardAD Completed");
+        //    }
+        //});    
     }
 
     public void OnClickSave()
@@ -158,7 +158,7 @@ public class AuthTest : SingletonMono<AuthTest>
     {
         UniTask.Create(async () =>
         {
-            await IapManager.Instance.BuyProduct(IapManager.testProductID);
+            //await IapManager.Instance.BuyProduct(IapManager.testProductID);
             Debug.Log("OnClickPurchase Complete");
         });
         
